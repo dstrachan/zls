@@ -30,12 +30,6 @@ const minimum_runtime_zig_version = "0.12.0";
 const release_targets = [_]std.Target.Query{
     .{ .cpu_arch = .x86_64, .os_tag = .windows },
     .{ .cpu_arch = .x86_64, .os_tag = .linux },
-    .{ .cpu_arch = .x86_64, .os_tag = .macos },
-    .{ .cpu_arch = .x86, .os_tag = .windows },
-    .{ .cpu_arch = .x86, .os_tag = .linux },
-    .{ .cpu_arch = .aarch64, .os_tag = .linux },
-    .{ .cpu_arch = .aarch64, .os_tag = .macos },
-    .{ .cpu_arch = .wasm32, .os_tag = .wasi },
 };
 
 pub fn build(b: *Build) !void {
@@ -401,7 +395,7 @@ fn release(b: *Build, target_queries: []const std.Target.Query, release_artifact
         const is_windows = resolved_target.os.tag == .windows;
         const exe_name = b.fmt("{s}{s}", .{ exe.name, resolved_target.exeFileExt() });
 
-        const extensions: []const FileExtension = if (is_windows) &.{.zip} else &.{ .@"tar.xz", .@"tar.gz" };
+        const extensions: []const FileExtension = &.{.zip};
 
         for (extensions) |extension| {
             const file_name = b.fmt("zls-{s}-{s}-{}.{s}", .{
@@ -422,7 +416,7 @@ fn release(b: *Build, target_queries: []const std.Target.Query, release_artifact
                     compress_cmd.addArgs(&.{ "7z", "a", "-mx=9" });
                     compressed_artifacts.putNoClobber(file_name, compress_cmd.addOutputFileArg(file_name)) catch @panic("OOM");
                     compress_cmd.addArtifactArg(exe);
-                    compress_cmd.addFileArg(exe.getEmittedPdb());
+                    if (is_windows) compress_cmd.addFileArg(exe.getEmittedPdb());
                     compress_cmd.addFileArg(b.path("LICENSE"));
                     compress_cmd.addFileArg(b.path("README.md"));
                 },
